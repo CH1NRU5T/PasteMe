@@ -1,51 +1,49 @@
 const Discord = require(`discord.js`);
-// var hastebin = require('hastebin')
 const client = new Discord.Client();
 const axios = require('axios')
 const keepAlive = require('./server')
+require('dotenv').config();
 
 const prefix = "."
 
-client.on(`ready`, ()=>{
+const fs = require('fs')
+
+//Create a new Discord collection
+client.commands = new Discord.Collection();
+
+
+//readdirSync -> reads the contents of the directory
+//make sure that the command files are javascript files
+const commandFiles = fs.readdirSync('./commands/').filter(file => file.endsWith(`.js`));
+
+//traverse throught all the command files
+for (const file of commandFiles) {
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.name, command);
+}
+
+client.on(`ready`, () => {
   console.log(`Logged in as ${client.user.tag}!`)
 });
 
 //actions on message
-client.on(`message`, async msg=>{
+client.on(`message`, async msg => {
   if (!msg.content.startsWith(prefix) || msg.author.bot) return;
+
   const args = msg.content.slice(prefix.length).split(/ +/);
   const command = args.shift().toLowerCase();
-  if(command === `paste`){
-    pasteToPastebinAndReturnLink(msg, msg.content.slice(prefix.length + command.length+1));
-    // console.log(msg.content.slice(prefix.length + command.length+1))
+
+  //if .paste is entered, take the string after that and create a paste with the string
+  if (command === `paste`) {
+    let commandArg = msg.content.slice(prefix.length + command.length + 1);
+    client.commands.get(`paste`).execute(msg, args, commandArg);
   }
-  else if(command==`pastefile`){
-    const file = msg.attachments.first();
-    const fileUrl=(file.url)
-    var fileContent = getFileContent(fileUrl).then(content=>pasteToPastebinAndReturnLink(msg,content)).catch(err=>console.log(err))
-    // pasteToPastebinAndReturnLink(msg,this.getFileContent(fileUrl).then(content=>console.log(content)).catch(err=>console.log(err)))
-    
+
+  //if .pastefile is entered, read the contents of the file and then create a paste with it
+  else if (command == `pastefile`) {
+    msg, args, client.commands.get(`pastefile`).execute(msg, args).then(content => client.commands.get(`paste`).execute(msg, args, content));
   }
 });
 
-var getFileContent= (fileUrl) =>{
-  return axios.get(fileUrl).then(fileContent => fileContent.data)
-  .catch(err=>console.log(err));
-}
-
-function pasteToPastebinAndReturnLink(msg,text){
-// hastebin.createPaste(text,{
-//   raw:false,
-//   contentType:'text/plain',
-//   server:'https://hastebin.com'
-// }, /*options for the got module here*/{})
-//     .then((url)=>{
-//       msg.reply(url)
-//     }).catch((err)=>
-//     msg.reply(err))
-// }
-return axios.post('https://hastebin.com/documents', text).then(key=> msg.reply('https://hastebin.com/'+key.data.key))
-.catch(err=>console.log(err))
-}
 keepAlive()
 client.login(process.env.TOKEN);
