@@ -7,7 +7,7 @@ module.exports =
 
         pasteToHastebinAndReturnLink(message, argsContent);
         function pasteToHastebinAndReturnLink(msg, text) {
-            return axios.post('https://hastebin.com/documents/', text).then(key => msg.reply('https://hastebin.com/raw/' + key.data.key))
+            return axios.post('https://pastie.io/documents', text).then(key => msg.reply('https://pastie.io/raw/' + key.data.key))
                 .catch(err => console.log(err))
         }
 
